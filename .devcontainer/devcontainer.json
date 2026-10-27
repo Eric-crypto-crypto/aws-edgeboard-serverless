@@ -1,0 +1,32 @@
+{
+  "name": "aws-edgeboard-serverless",
+
+  // 基础镜像：微软官方 Python 3.13 开发镜像（与 Lambda 运行时版本一致）
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+
+  // features = 在基础镜像上"加装"的工具
+  "features": {
+    "ghcr.io/devcontainers/features/aws-cli:1": {},     // AWS 命令行 v2
+    "ghcr.io/devcontainers/features/terraform:1": {},   // Terraform（默认装最新版，需 ≥1.10）
+    "ghcr.io/devcontainers/features/github-cli:1": {}   // gh 命令（换了镜像后需要显式加上）
+  },
+
+    // 容器创建后执行的脚本
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // 环境变量：默认使用 edgeboard 这个 AWS Profile
+  "remoteEnv": {
+    "AWS_PROFILE": "edgeboard"
+  },
+  
+  // 自动安装的 VS Code 插件
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "hashicorp.terraform",   // Terraform 语法高亮、补全、格式化
+        "ms-python.python",       // Python 支持
+        "anthropic.claude-code"  // Claude Code for VS Code
+      ]
+    }
+  }
+}
