@@ -48,6 +48,8 @@ jobs:
       contents: read
       id-token: write       # 申请 OIDC 令牌
       pull-requests: write  # 在 PR 上评论
+    env:
+      TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
     defaults:
       run:
         working-directory: infra/envs/dev

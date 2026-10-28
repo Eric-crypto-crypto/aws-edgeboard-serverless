@@ -112,3 +112,19 @@ module "static_site" {
   domain_name   = local.site_domain
   zone_id       = data.aws_route53_zone.main.zone_id
 }
+
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  name        = local.name_prefix
+  alert_email = var.alert_email
+
+  lambda_functions = {
+    "visit"          = module.visit_function.function_name
+    "list-messages"  = module.list_messages_function.function_name
+    "create-message" = module.create_message_function.function_name
+  }
+
+  api_id     = module.api.api_id
+  table_name = module.database.table_name
+}
