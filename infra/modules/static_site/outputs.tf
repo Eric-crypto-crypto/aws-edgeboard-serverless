@@ -12,3 +12,7 @@ output "distribution_domain_name" {
   description = "CloudFront 默认域名，例如 dxxxx.cloudfront.net"
   value       = aws_cloudfront_distribution.this.domain_name
 }
+
+output "site_url" {
+  value = "https://${var.domain_name}"
+}

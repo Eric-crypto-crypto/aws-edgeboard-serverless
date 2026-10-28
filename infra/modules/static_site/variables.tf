@@ -13,3 +13,13 @@ variable "api_domain" {
   description = "API Gateway 的域名（不带 https://），例如 abc123.execute-api.ap-southeast-2.amazonaws.com"
   type        = string
 }
+
+variable "domain_name" {
+  description = "网站域名，例如 dev.example.com"
+  type        = string
+}
+
+variable "zone_id" {
+  description = "Route 53 托管区 ID"
+  type        = string
+}

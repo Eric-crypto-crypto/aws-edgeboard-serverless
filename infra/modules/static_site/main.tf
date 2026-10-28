@@ -53,6 +53,7 @@ data "aws_cloudfront_response_headers_policy" "security_headers" {
 # ===== 3. CloudFront 分发（全球便利店）=====
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
+  aliases             = [var.domain_name] # 告诉 CloudFront：这个分发也响应这个域名
   comment             = "${var.name} static site"
   default_root_object = "index.html"
   price_class         = "PriceClass_All" # 包含澳洲/新西兰节点
@@ -109,10 +110,13 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
-  # 4.3 关会换成自定义域名的 ACM 证书
+  # 自定义域名的 ACM 证书
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
+
 }
 
 # ===== 4. 桶策略：只允许"这一个"分发读取 =====
@@ -141,4 +145,58 @@ resource "aws_s3_bucket_policy" "site" {
   policy = data.aws_iam_policy_document.site_bucket.json
 
   depends_on = [aws_s3_bucket_public_access_block.site]
+}
+
+# ===== 5. ACM 证书（必须在 us-east-1）=====
+resource "aws_acm_certificate" "site" {
+  provider = aws.us_east_1
+
+  domain_name       = var.domain_name
+  validation_method = "DNS"
+
+  # 更换证书时，先创建新证书，再删除旧证书，避免网站出现没有证书的空档期
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# 在 Route 53 中贴上"暗号纸条"（验证用的 CNAME 记录）
+resource "aws_route53_record" "cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.site.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+
+  zone_id         = var.zone_id
+  name            = each.value.name
+  type            = each.value.type
+  records         = [each.value.record]
+  ttl             = 60
+  allow_overwrite = true
+}
+
+# 等待 ACM 验证通过（这个资源本身不会创建任何东西，只负责"等待"）
+resource "aws_acm_certificate_validation" "site" {
+  provider = aws.us_east_1
+
+  certificate_arn         = aws_acm_certificate.site.arn
+  validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
+}
+
+# ===== 6. DNS 记录：域名 → CloudFront（IPv4 + IPv6）=====
+resource "aws_route53_record" "site" {
+  for_each = toset(["A", "AAAA"])
+
+  zone_id = var.zone_id
+  name    = var.domain_name
+  type    = each.key
+
+  alias {
+    name                   = aws_cloudfront_distribution.this.domain_name
+    zone_id                = aws_cloudfront_distribution.this.hosted_zone_id
+    evaluate_target_health = false
+  }
 }

@@ -8,8 +8,16 @@ locals {
     TABLE_NAME              = module.database.table_name
     POWERTOOLS_SERVICE_NAME = "edgeboard"
   }
+
+  root_domain = "edgeboard.click"
+  site_domain = "dev.${local.root_domain}"
+
 }
 
+# 托管区由 Route 53 注册域名时自动创建，Terraform 只读取、不管理
+data "aws_route53_zone" "main" {
+  name = local.root_domain
+}
 
 module "database" {
   source = "../../modules/database" # 积木所在的路径（相对于当前目录）
@@ -92,8 +100,14 @@ module "api" {
 module "static_site" {
   source = "../../modules/static_site"
 
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
   name          = local.name_prefix
   force_destroy = true # dev 环境方便清理
   api_domain    = replace(module.api.api_endpoint, "https://", "")
+  domain_name   = local.site_domain
+  zone_id       = data.aws_route53_zone.main.zone_id
 }
-
