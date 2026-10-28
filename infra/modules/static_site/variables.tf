@@ -8,3 +8,8 @@ variable "force_destroy" {
   type        = bool
   default     = false
 }
+
+variable "api_domain" {
+  description = "API Gateway 的域名（不带 https://），例如 abc123.execute-api.ap-southeast-2.amazonaws.com"
+  type        = string
+}

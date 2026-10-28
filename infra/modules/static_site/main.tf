@@ -38,6 +38,18 @@ data "aws_cloudfront_cache_policy" "caching_optimized" {
   name = "Managed-CachingOptimized"
 }
 
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
+data "aws_cloudfront_response_headers_policy" "security_headers" {
+  name = "Managed-SecurityHeadersPolicy"
+}
+
 # ===== 3. CloudFront 分发（全球便利店）=====
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
@@ -53,13 +65,42 @@ resource "aws_cloudfront_distribution" "this" {
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
   }
 
-  default_cache_behavior {
-    target_origin_id       = "s3-site"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD"]
+  # 第二个源站：API Gateway
+  origin {
+    origin_id   = "api"
+    domain_name = var.api_domain
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only" # CloudFront 到 API 也必须用 HTTPS
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  # /api/* 行为：不缓存，转发给 API Gateway
+  ordered_cache_behavior {
+    path_pattern           = "/api/*"
+    target_origin_id       = "api"
+    viewer_protocol_policy = "https-only"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods         = ["GET", "HEAD"]
-    compress               = true # 自动 gzip / brotli 压缩
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+    compress               = true
+
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+  }
+
+
+  default_cache_behavior {
+    target_origin_id           = "s3-site"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = true # 自动 gzip / brotli 压缩
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+
   }
 
   restrictions {
