@@ -23,6 +23,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
     steps:
       - uses: actions/checkout@v5
 
