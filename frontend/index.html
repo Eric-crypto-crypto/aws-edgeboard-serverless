@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EdgeBoard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>EdgeBoard</h1>
+      <p class="visits">你是第 <span id="visits">…</span> 位访客</p>
+    </header>
+
+    <section>
+      <h2>留言</h2>
+      <form id="message-form">
+        <input id="author" type="text" placeholder="昵称（可选）" maxlength="30" autocomplete="nickname">
+        <textarea id="message" placeholder="说点什么……" maxlength="500" rows="3" required></textarea>
+        <div class="form-footer">
+          <span id="char-count">0 / 500</span>
+          <button id="submit" type="submit">发布</button>
+        </div>
+        <p id="form-error" class="error" role="alert"></p>
+      </form>
+    </section>
+
+    <section>
+      <ul id="messages"></ul>
+      <p id="list-error" class="error" role="alert"></p>
+      <button id="load-more" type="button" hidden>加载更多</button>
+    </section>
+  </main>
+</body>
+</html>
