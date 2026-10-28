@@ -33,6 +33,14 @@ data "aws_iam_policy_document" "permissions" {
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
     resources = ["${aws_cloudwatch_log_group.this.arn}:*"]
   }
+
+  # X-Ray 不支持资源级权限，只能使用 "*"；这两个操作只能写入追踪数据
+  statement {
+    sid       = "WriteTraces"
+    actions   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
+    resources = ["*"]
+  }
+
 }
 
 resource "aws_iam_role_policy" "this" {
@@ -67,6 +75,10 @@ resource "aws_lambda_function" "this" {
 
   environment {
     variables = var.environment
+  }
+
+  tracing_config {
+    mode = "Active" # 每个请求都由 Lambda 发起追踪
   }
 
   # 先准备好权限和日志组，再创建函数，避免函数第一次运行时没有权限写日志

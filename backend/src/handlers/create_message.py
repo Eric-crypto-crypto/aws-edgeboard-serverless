@@ -5,11 +5,12 @@ import uuid
 from datetime import UTC, datetime
 
 import boto3
-from aws_lambda_powertools import Logger
+from aws_lambda_powertools import Logger, Tracer
 
 from handlers.http import json_response
 
 logger = Logger()
+tracer = Tracer()  # 自动记录 boto3 调用（DynamoDB）为 X-Ray 子段
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 table = boto3.resource("dynamodb").Table(TABLE_NAME)
@@ -55,6 +56,7 @@ def validate(data):
 
 
 @logger.inject_lambda_context
+@tracer.capture_lambda_handler
 def handler(event, context):
     """POST /api/messages：发布一条留言。"""
     data = parse_body(event)

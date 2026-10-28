@@ -17,6 +17,7 @@ def aws_env(monkeypatch):
     monkeypatch.delenv("AWS_PROFILE", raising=False)
     monkeypatch.setenv("TABLE_NAME", TABLE_NAME)
     monkeypatch.setenv("POWERTOOLS_SERVICE_NAME", "edgeboard-test")
+    monkeypatch.setenv("POWERTOOLS_TRACE_DISABLED", "true")  # 测试时不向 X-Ray 发送数据
 
 
 @pytest.fixture

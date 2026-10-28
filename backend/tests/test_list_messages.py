@@ -1,5 +1,6 @@
 import base64
 import json
+import pytest
 
 
 def put_messages(table, count):
@@ -86,5 +87,14 @@ def test_cursor_pointing_to_other_partition_is_rejected(load_handler, lambda_con
     tampered = make_cursor({"PK": "COUNTER#site", "SK": "COUNTER#site"})
 
     status, _ = get(list_messages, lambda_context, {"cursor": tampered})
+
+    assert status == 400
+
+
+@pytest.mark.parametrize("cursor", [123, None, ["x"], {"PK": "BOARD#main"}])
+def test_non_string_cursor_is_rejected(load_handler, lambda_context, cursor):
+    list_messages = load_handler("handlers.list_messages")
+
+    status, _ = get(list_messages, lambda_context, {"cursor": cursor})
 
     assert status == 400
