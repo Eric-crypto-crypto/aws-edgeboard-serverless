@@ -1,7 +1,10 @@
 locals {
-  github_repo  = "Eric-crypto-crypto/aws-edgeboard-serverless"
   state_bucket = "edgeboard-tfstate-181851924026"
   oidc_host    = "token.actions.githubusercontent.com"
+
+  # GitHub 不可变 subject 格式：<用户名>@<用户ID>/<仓库名>@<仓库ID>
+  # 查询命令：gh api repos/<owner>/<repo>/actions/oidc/customization/sub
+  github_sub_prefix = "repo:Eric-crypto-crypto@181318956/aws-edgeboard-serverless@1435075365"
 }
 
 # ===== 1. OIDC 身份提供商：让 AWS 信任 GitHub 这个"售票平台" =====
@@ -31,7 +34,7 @@ data "aws_iam_policy_document" "plan_trust" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_host}:sub"
-      values   = ["repo:${local.github_repo}:pull_request"]
+      values   = ["${local.github_sub_prefix}:pull_request"]
     }
   }
 }
@@ -83,7 +86,7 @@ data "aws_iam_policy_document" "apply_trust" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_host}:sub"
-      values   = ["repo:${local.github_repo}:environment:dev"]
+      values   = ["${local.github_sub_prefix}:environment:dev"]
     }
   }
 }
