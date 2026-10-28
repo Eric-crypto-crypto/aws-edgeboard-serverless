@@ -67,3 +67,24 @@ module "create_message_function" {
   dynamodb_table_arn = module.database.table_arn
   dynamodb_actions   = ["dynamodb:PutItem"]
 }
+
+module "api" {
+  source = "../../modules/api"
+
+  name = "${local.name_prefix}-api"
+
+  routes = {
+    "POST /api/visit" = {
+      function_name = module.visit_function.function_name
+      invoke_arn    = module.visit_function.invoke_arn
+    }
+    "GET /api/messages" = {
+      function_name = module.list_messages_function.function_name
+      invoke_arn    = module.list_messages_function.invoke_arn
+    }
+    "POST /api/messages" = {
+      function_name = module.create_message_function.function_name
+      invoke_arn    = module.create_message_function.invoke_arn
+    }
+  }
+}
