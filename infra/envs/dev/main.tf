@@ -28,10 +28,11 @@ module "database" {
 
 # 把 backend/src 打成一个 zip 包，三个函数共用（每个函数通过 handler 选择各自的入口）
 data "archive_file" "backend" {
-  type        = "zip"
-  source_dir  = "${path.module}/../../../backend/src"
-  output_path = "${path.module}/build/backend.zip"
-  excludes    = ["**/__pycache__/**"]
+  type             = "zip"
+  source_dir       = "${path.module}/../../../backend/src"
+  output_path      = "${path.module}/build/backend.zip"
+  output_file_mode = "0644" # 统一文件权限，保证本地和 CI 打出的 zip 完全一致
+  excludes         = ["**/__pycache__/**"]
 }
 
 module "visit_function" {
