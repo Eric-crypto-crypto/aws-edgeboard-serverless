@@ -23,5 +23,6 @@ output "distribution_id" {
 }
 
 output "site_url" {
-  value = "https://${module.static_site.distribution_domain_name}"
+  value = module.static_site.site_url
 }
+
