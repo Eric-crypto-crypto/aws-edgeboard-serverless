@@ -9,3 +9,7 @@ output "function_names" {
     create_message = module.create_message_function.function_name
   }
 }
+
+output "api_endpoint" {
+  value = module.api.api_endpoint
+}
