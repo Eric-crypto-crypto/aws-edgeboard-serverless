@@ -88,3 +88,10 @@ module "api" {
     }
   }
 }
+
+module "static_site" {
+  source = "../../modules/static_site"
+
+  name          = local.name_prefix
+  force_destroy = true # dev 环境方便清理
+}
