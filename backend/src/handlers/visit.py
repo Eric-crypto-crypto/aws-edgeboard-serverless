@@ -1,12 +1,13 @@
 import os
 
 import boto3
-from aws_lambda_powertools import Logger
+from aws_lambda_powertools import Logger, Tracer
 
 from handlers.http import json_response
 
 # ===== 以下代码在冷启动时只执行一次，之后的热启动直接复用 =====
 logger = Logger()
+tracer = Tracer()  # 自动记录 boto3 调用（DynamoDB）为 X-Ray 子段
 
 # 表名通过环境变量注入：同一份代码，dev 和 prod 各连各的表
 TABLE_NAME = os.environ["TABLE_NAME"]
@@ -17,6 +18,7 @@ COUNTER_KEY = {"PK": "COUNTER#site", "SK": "COUNTER#site"}
 
 
 @logger.inject_lambda_context
+@tracer.capture_lambda_handler
 def handler(event, context):
     """POST /api/visit：访客数 +1，并返回最新值。"""
     resp = table.update_item(

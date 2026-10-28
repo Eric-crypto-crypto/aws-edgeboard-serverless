@@ -3,12 +3,13 @@ import json
 import os
 
 import boto3
-from aws_lambda_powertools import Logger
+from aws_lambda_powertools import Logger, Tracer
 from boto3.dynamodb.conditions import Key
 
 from handlers.http import json_response
 
 logger = Logger()
+tracer = Tracer()  # 自动记录 boto3 调用（DynamoDB）为 X-Ray 子段
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 table = boto3.resource("dynamodb").Table(TABLE_NAME)
@@ -24,6 +25,8 @@ def encode_cursor(last_key):
 
 def decode_cursor(cursor):
     """解码前端传回的游标；格式错误或指向其他分区时返回 None。"""
+    if not isinstance(cursor, str):
+        return None
     try:
         key = json.loads(base64.urlsafe_b64decode(cursor.encode()))
     except (ValueError, UnicodeDecodeError):
@@ -51,6 +54,7 @@ def to_message(item):
 
 
 @logger.inject_lambda_context
+@tracer.capture_lambda_handler
 def handler(event, context):
     """GET /api/messages?cursor=...：按时间倒序分页读取留言。"""
     params = event.get("queryStringParameters") or {}
