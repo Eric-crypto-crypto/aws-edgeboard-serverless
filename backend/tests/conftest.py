@@ -44,7 +44,9 @@ class FakeLambdaContext:
 
     function_name: str = "test-fn"
     memory_limit_in_mb: int = 128
-    invoked_function_arn: str = "arn:aws:lambda:ap-southeast-2:123456789012:function:test-fn"
+    invoked_function_arn: str = (
+        "arn:aws:lambda:ap-southeast-2:123456789012:function:test-fn"
+    )
     aws_request_id: str = "test-request-id"
 
 

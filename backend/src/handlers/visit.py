@@ -1,8 +1,9 @@
-import json
 import os
 
 import boto3
 from aws_lambda_powertools import Logger
+
+from handlers.http import json_response
 
 # ===== 以下代码在冷启动时只执行一次，之后的热启动直接复用 =====
 logger = Logger()
@@ -13,8 +14,6 @@ table = boto3.resource("dynamodb").Table(TABLE_NAME)
 
 # 完整主键：表有 SK，因此必须同时提供 PK 和 SK
 COUNTER_KEY = {"PK": "COUNTER#site", "SK": "COUNTER#site"}
-# COUNTER_KEY = {"PK": "COUNTER#site"}
-
 
 
 @logger.inject_lambda_context
@@ -31,8 +30,4 @@ def handler(event, context):
     visits = int(resp["Attributes"]["visits"])
     logger.info("visit counted", extra={"visits": visits})
 
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"visits": visits}),
-    }
+    return json_response(200, {"visits": visits})
