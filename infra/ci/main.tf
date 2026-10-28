@@ -1,5 +1,5 @@
 locals {
-  state_bucket     = "edgeboard-tfstate-181851924026"
+  state_bucket = "edgeboard-tfstate-181851924026"
   oidc_host    = "token.actions.githubusercontent.com"
 
   # GitHub 不可变 subject 格式：<用户名>@<用户ID>/<仓库名>@<仓库ID>
