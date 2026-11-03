@@ -2,10 +2,10 @@ import json
 
 
 def json_response(status_code, body):
-    """生成 API Gateway HTTP API（payload 2.0）格式的 JSON 响应。"""
+    """Build a JSON response in the API Gateway HTTP API (payload 2.0) format."""
     return {
         "statusCode": status_code,
         "headers": {"Content-Type": "application/json"},
-        # ensure_ascii=False：中文按原样输出，而不是变成 \u4e2d 这样的转义序列
+        # ensure_ascii=False: keep non-ASCII text (e.g. Chinese) as-is instead of \u4e2d escapes
         "body": json.dumps(body, ensure_ascii=False),
     }

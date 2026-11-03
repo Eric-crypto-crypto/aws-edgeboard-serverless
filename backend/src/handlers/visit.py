@@ -5,22 +5,22 @@ from aws_lambda_powertools import Logger, Tracer
 
 from handlers.http import json_response
 
-# ===== 以下代码在冷启动时只执行一次，之后的热启动直接复用 =====
+# ===== Runs once per cold start; warm invocations reuse it =====
 logger = Logger()
-tracer = Tracer()  # 自动记录 boto3 调用（DynamoDB）为 X-Ray 子段
+tracer = Tracer()  # Records boto3 (DynamoDB) calls as X-Ray subsegments
 
-# 表名通过环境变量注入：同一份代码，dev 和 prod 各连各的表
+# Table name comes from an env var, so the same code serves dev and prod
 TABLE_NAME = os.environ["TABLE_NAME"]
 table = boto3.resource("dynamodb").Table(TABLE_NAME)
 
-# 完整主键：表有 SK，因此必须同时提供 PK 和 SK
+# Full primary key: the table has a sort key, so both PK and SK are required
 COUNTER_KEY = {"PK": "COUNTER#site", "SK": "COUNTER#site"}
 
 
 @logger.inject_lambda_context
 @tracer.capture_lambda_handler
 def handler(event, context):
-    """POST /api/visit：访客数 +1，并返回最新值。"""
+    """POST /api/visit: increment the visit counter and return the new value."""
     resp = table.update_item(
         Key=COUNTER_KEY,
         UpdateExpression="ADD visits :inc",
@@ -28,7 +28,7 @@ def handler(event, context):
         ReturnValues="UPDATED_NEW",
     )
 
-    # boto3 返回的数字是 Decimal 类型，json.dumps 无法直接处理，所以先转成 int
+    # boto3 returns numbers as Decimal, which json.dumps cannot serialize; use int
     visits = int(resp["Attributes"]["visits"])
     logger.info("visit counted", extra={"visits": visits})
 

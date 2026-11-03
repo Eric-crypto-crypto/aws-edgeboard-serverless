@@ -1,10 +1,10 @@
 variable "table_name" {
-  description = "DynamoDB 表名，例如 edgeboard-dev"
+  description = "DynamoDB table name, e.g. edgeboard-dev"
   type        = string
 }
 
 variable "deletion_protection" {
-  description = "是否开启删除保护（建议 prod 开启、dev 关闭）"
+  description = "Enable deletion protection (recommended on in prod, off in dev)"
   type        = bool
   default     = true
 }

@@ -1,5 +1,5 @@
 [tool.pytest.ini_options]
-pythonpath = ["src"]   # 让测试能直接 import handlers.xxx
+pythonpath = ["src"]   # Lets tests import handlers.xxx directly
 testpaths = ["tests"]
 
 [tool.ruff]

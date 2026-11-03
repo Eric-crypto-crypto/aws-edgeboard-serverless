@@ -1,10 +1,10 @@
 variable "name" {
-  description = "API 名称，例如 edgeboard-dev-api"
+  description = "API name, e.g. edgeboard-dev-api"
   type        = string
 }
 
 variable "routes" {
-  description = "路由表：键为路由（如 \"POST /api/visit\"），值为对应的 Lambda 信息"
+  description = "Route table: keys are route keys (e.g. \"POST /api/visit\"), values describe the target Lambda"
   type = map(object({
     function_name = string
     invoke_arn    = string
@@ -12,19 +12,19 @@ variable "routes" {
 }
 
 variable "throttling_rate_limit" {
-  description = "稳定状态下每秒允许的请求数"
+  description = "Steady-state requests per second"
   type        = number
   default     = 20
 }
 
 variable "throttling_burst_limit" {
-  description = "允许瞬时涌入的请求上限"
+  description = "Maximum burst of requests"
   type        = number
   default     = 50
 }
 
 variable "log_retention_days" {
-  description = "访问日志保留天数"
+  description = "Access log retention in days"
   type        = number
   default     = 14
 }

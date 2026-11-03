@@ -50,18 +50,18 @@ __pycache__/
 venv/
 .pytest_cache/
 
-# ===== Lambda 打包产物 =====
+# ===== Lambda build artifacts =====
 *.zip
 
-# ===== 前端（如果用到 Node.js）=====
+# ===== Frontend (if Node.js is used) =====
 node_modules/
 dist/
 
-# ===== 敏感信息 =====
+# ===== Sensitive files =====
 .env
 *.pem
 
-# ===== 系统和编辑器生成的文件 =====
+# ===== OS and editor files =====
 .DS_Store
 .vscode/
 .idea/

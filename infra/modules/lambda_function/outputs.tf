@@ -7,6 +7,6 @@ output "function_arn" {
 }
 
 output "invoke_arn" {
-  description = "第 3 步 API Gateway 集成 Lambda 时使用"
+  description = "Used by the API Gateway integration"
   value       = aws_lambda_function.this.invoke_arn
 }

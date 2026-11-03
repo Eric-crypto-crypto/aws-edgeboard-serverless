@@ -10,7 +10,7 @@ provider "aws" {
   }
 }
 
-# CloudFront 只从 us-east-1 读取 ACM 证书
+# CloudFront only reads ACM certificates from us-east-1
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"

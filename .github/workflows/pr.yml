@@ -4,11 +4,11 @@ on:
   pull_request:
     branches: [main]
 
-# 默认权限：只读代码。需要更多权限的 Job 单独声明
+# Default: read-only access to the code. Jobs that need more declare it themselves
 permissions:
   contents: read
 
-# 同一个 PR 连续推送时，取消上一次还没跑完的运行，节省时间
+# Cancel an unfinished run when the same PR gets a new push
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -46,8 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write       # 申请 OIDC 令牌
-      pull-requests: write  # 在 PR 上评论
+      id-token: write       # Request an OIDC token
+      pull-requests: write  # Comment on the PR
     env:
       TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
     defaults:
@@ -58,7 +58,7 @@ jobs:
 
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.17.0"  # 和本地版本一致
+          terraform_version: "1.17.0"  # Same version as local
           terraform_wrapper: false
 
       - name: Terraform fmt
@@ -87,14 +87,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           PLAN=$(terraform show -no-color tfplan | tail -c 60000)
-          SUMMARY=$(echo "$PLAN" | grep -E '^(Plan:|No changes)' || echo "详见完整 plan")
+          SUMMARY=$(echo "$PLAN" | grep -E '^(Plan:|No changes)' || echo "See the full plan below")
 
           cat > comment.md <<EOF
-          ### 🏗 Terraform plan（dev）
+          ### 🏗 Terraform plan (dev)
 
           **${SUMMARY}**
 
-          <details><summary>展开完整 plan</summary>
+          <details><summary>Show full plan</summary>
 
           \`\`\`
           ${PLAN}
@@ -102,7 +102,7 @@ jobs:
 
           </details>
 
-          提交：\`${{ github.event.pull_request.head.sha }}\`
+          Commit: \`${{ github.event.pull_request.head.sha }}\`
           EOF
 
           gh pr comment ${{ github.event.pull_request.number }} \

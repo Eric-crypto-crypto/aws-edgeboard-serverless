@@ -3,12 +3,13 @@ name: Deploy
 on:
   push:
     branches: [main]
-  workflow_dispatch: # 允许在网页上手动触发
+  workflow_dispatch: # Allow manual runs from the Actions tab
 
 permissions:
   contents: read
 
-# 部署任务排队执行，绝不中途取消（否则可能导致 apply 进行到一半、state 锁无法释放）
+# Queue deployments and never cancel one mid-run (a killed apply can leave
+# resources half-updated and the state lock held)
 concurrency:
   group: deploy-dev
   cancel-in-progress: false
@@ -42,7 +43,7 @@ jobs:
       - name: Who am I
         run: aws sts get-caller-identity
 
-      # ===== 1. 基础设施 + Lambda 代码 =====
+      # ===== 1. Infrastructure + Lambda code =====
       - name: Terraform init
         working-directory: infra/envs/dev
         run: terraform init -input=false
@@ -62,7 +63,7 @@ jobs:
           echo "bucket=$(terraform output -raw site_bucket_name)" >> "$GITHUB_OUTPUT"
           echo "distribution=$(terraform output -raw distribution_id)" >> "$GITHUB_OUTPUT"
 
-      # ===== 2. 前端 =====
+      # ===== 2. Frontend =====
       - name: Build frontend
         run: ./scripts/build-frontend.sh
 

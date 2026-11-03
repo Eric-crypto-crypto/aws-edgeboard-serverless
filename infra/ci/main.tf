@@ -2,18 +2,18 @@ locals {
   state_bucket = "edgeboard-tfstate-181851924026"
   oidc_host    = "token.actions.githubusercontent.com"
 
-  # GitHub 不可变 subject 格式：<用户名>@<用户ID>/<仓库名>@<仓库ID>
-  # 查询命令：gh api repos/<owner>/<repo>/actions/oidc/customization/sub
+  # GitHub immutable subject format: <owner>@<owner_id>/<repo>@<repo_id>
+  # Look it up with: gh api repos/<owner>/<repo>/actions/oidc/customization/sub
   github_sub_prefix = "repo:Eric-crypto-crypto@181318956/aws-edgeboard-serverless@1435075365"
 }
 
-# ===== 1. OIDC 身份提供商：让 AWS 信任 GitHub 这个"售票平台" =====
+# ===== 1. OIDC identity provider: lets AWS trust tokens issued by GitHub =====
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://${local.oidc_host}"
   client_id_list = ["sts.amazonaws.com"]
 }
 
-# ===== 2. plan 角色：任何 PR 都可以使用，只读 =====
+# ===== 2. Plan role: read-only, usable by any PR =====
 data "aws_iam_policy_document" "plan_trust" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -23,14 +23,14 @@ data "aws_iam_policy_document" "plan_trust" {
       identifiers = [aws_iam_openid_connect_provider.github.arn]
     }
 
-    # 票必须是签发给 AWS STS 的
+    # The token must be issued for AWS STS
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_host}:aud"
       values   = ["sts.amazonaws.com"]
     }
 
-    # 票必须来自本仓库的 PR 事件
+    # The token must come from a pull_request event in this repo
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_host}:sub"
@@ -42,16 +42,16 @@ data "aws_iam_policy_document" "plan_trust" {
 resource "aws_iam_role" "plan" {
   name                 = "edgeboard-github-plan"
   assume_role_policy   = data.aws_iam_policy_document.plan_trust.json
-  max_session_duration = 3600 # 临时凭证最长 1 小时
+  max_session_duration = 3600 # Temporary credentials last at most 1 hour
 }
 
-# AWS 托管的只读策略：能查看资源配置，但不能修改任何东西
+# AWS managed read-only policy: can inspect resources but change nothing
 resource "aws_iam_role_policy_attachment" "plan_readonly" {
   role       = aws_iam_role.plan.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 
-# 唯一的"写"权限：plan 时需要创建和删除 state 锁文件
+# The only write permission: plan must create and delete the state lock file
 data "aws_iam_policy_document" "plan_state_lock" {
   statement {
     sid       = "StateLockFile"
@@ -66,7 +66,7 @@ resource "aws_iam_role_policy" "plan_state_lock" {
   policy = data.aws_iam_policy_document.plan_state_lock.json
 }
 
-# ===== 3. apply 角色：只有 dev 环境的部署任务可以使用 =====
+# ===== 3. Apply role: only jobs running in the dev environment =====
 data "aws_iam_policy_document" "apply_trust" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -82,7 +82,7 @@ data "aws_iam_policy_document" "apply_trust" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # 注意：任务指定了 environment 后，sub 的格式是 environment:<名字>
+    # Note: once a job sets an environment, sub becomes ...:environment:<name>
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_host}:sub"

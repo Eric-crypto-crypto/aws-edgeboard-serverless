@@ -1,4 +1,4 @@
 output "state_bucket_name" {
-  description = "Terraform 远程状态桶名称，后续 backend 配置要用"
+  description = "Name of the Terraform remote state bucket, used by backend configs"
   value       = aws_s3_bucket.tfstate.bucket
 }
