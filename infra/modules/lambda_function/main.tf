@@ -1,6 +1,6 @@
-# ===== 1. 工牌：IAM 角色 =====
+# ===== 1. IAM role =====
 
-# 信任策略：只有 Lambda 服务可以佩戴这个角色
+# Trust policy: only the Lambda service can assume this role
 data "aws_iam_policy_document" "assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -17,24 +17,24 @@ resource "aws_iam_role" "this" {
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
-# ===== 2. 权限清单：最小权限策略 =====
+# ===== 2. Least-privilege permissions =====
 
 data "aws_iam_policy_document" "permissions" {
-  # 只能对指定的表执行指定的操作
+  # Only the listed actions on the given table
   statement {
     sid       = "DynamoDBAccess"
     actions   = var.dynamodb_actions
     resources = [var.dynamodb_table_arn]
   }
 
-  # 只能写入自己的日志组
+  # Only write to its own log group
   statement {
     sid       = "WriteOwnLogs"
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
     resources = ["${aws_cloudwatch_log_group.this.arn}:*"]
   }
 
-  # X-Ray 不支持资源级权限，只能使用 "*"；这两个操作只能写入追踪数据
+  # X-Ray has no resource-level permissions, so "*" is required; these actions only write traces
   statement {
     sid       = "WriteTraces"
     actions   = ["xray:PutTraceSegments", "xray:PutTelemetryRecords"]
@@ -49,15 +49,15 @@ resource "aws_iam_role_policy" "this" {
   policy = data.aws_iam_policy_document.permissions.json
 }
 
-# ===== 3. 工作日志本：CloudWatch 日志组 =====
+# ===== 3. CloudWatch log group =====
 
 resource "aws_cloudwatch_log_group" "this" {
-  # Lambda 固定把日志写到这个名字的日志组里
+  # Lambda always writes to a log group with this name
   name              = "/aws/lambda/${var.function_name}"
   retention_in_days = var.log_retention_days
 }
 
-# ===== 4. 厨师本人：Lambda 函数 =====
+# ===== 4. The Lambda function =====
 
 resource "aws_lambda_function" "this" {
   function_name = var.function_name
@@ -78,10 +78,10 @@ resource "aws_lambda_function" "this" {
   }
 
   tracing_config {
-    mode = "Active" # 每个请求都由 Lambda 发起追踪
+    mode = "Active" # Lambda starts traces for sampled requests
   }
 
-  # 先准备好权限和日志组，再创建函数，避免函数第一次运行时没有权限写日志
+  # Create permissions and the log group first so the first invocation can write logs
   depends_on = [
     aws_iam_role_policy.this,
     aws_cloudwatch_log_group.this,

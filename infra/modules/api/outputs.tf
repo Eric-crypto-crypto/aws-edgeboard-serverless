@@ -1,5 +1,5 @@
 output "api_endpoint" {
-  description = "API 的默认访问地址"
+  description = "Default invoke URL of the API"
   value       = aws_apigatewayv2_api.this.api_endpoint
 }
 

@@ -3,7 +3,7 @@ locals {
 
   powertools_layer_arn = "arn:aws:lambda:ap-southeast-2:017000801446:layer:AWSLambdaPowertoolsPythonV3-python313-arm64:40"
 
-  # 三个函数共用的环境变量
+  # Environment variables shared by all three functions
   lambda_environment = {
     TABLE_NAME              = module.database.table_name
     POWERTOOLS_SERVICE_NAME = "edgeboard"
@@ -14,24 +14,24 @@ locals {
 
 }
 
-# 托管区由 Route 53 注册域名时自动创建，Terraform 只读取、不管理
+# The hosted zone was created by Route 53 domain registration; Terraform only reads it
 data "aws_route53_zone" "main" {
   name = local.root_domain
 }
 
 module "database" {
-  source = "../../modules/database" # 积木所在的路径（相对于当前目录）
+  source = "../../modules/database" # Module path, relative to this directory
 
   table_name          = local.name_prefix
-  deletion_protection = false # dev 环境方便清理；prod 要设为 true
+  deletion_protection = false # Easy cleanup in dev; set to true in prod
 }
 
-# 把 backend/src 打成一个 zip 包，三个函数共用（每个函数通过 handler 选择各自的入口）
+# Package backend/src into one zip shared by all three functions (each picks its own handler)
 data "archive_file" "backend" {
   type             = "zip"
   source_dir       = "${path.module}/../../../backend/src"
   output_path      = "${path.module}/build/backend.zip"
-  output_file_mode = "0644" # 统一文件权限，保证本地和 CI 打出的 zip 完全一致
+  output_file_mode = "0644" # Fixed file mode so local and CI builds produce identical zips
   excludes         = ["**/__pycache__/**"]
 }
 
@@ -107,7 +107,7 @@ module "static_site" {
   }
 
   name          = local.name_prefix
-  force_destroy = true # dev 环境方便清理
+  force_destroy = true # Easy cleanup in dev
   api_domain    = replace(module.api.api_endpoint, "https://", "")
   domain_name   = local.site_domain
   zone_id       = data.aws_route53_zone.main.zone_id

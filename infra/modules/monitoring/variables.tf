@@ -1,25 +1,25 @@
 variable "name" {
-  description = "资源名前缀，例如 edgeboard-dev"
+  description = "Resource name prefix, e.g. edgeboard-dev"
   type        = string
 }
 
 variable "alert_email" {
-  description = "接收告警通知的邮箱"
+  description = "Email address that receives alarm notifications"
   type        = string
   sensitive   = true
 }
 
 variable "lambda_functions" {
-  description = "需要监控的 Lambda 函数：键为简称，值为函数名"
+  description = "Lambda functions to monitor: short name => function name"
   type        = map(string)
 }
 
 variable "api_id" {
-  description = "HTTP API 的 ID"
+  description = "ID of the HTTP API"
   type        = string
 }
 
 variable "table_name" {
-  description = "DynamoDB 表名"
+  description = "DynamoDB table name"
   type        = string
 }

@@ -12,12 +12,12 @@ terraform {
     }
   }
 
-  # 远程 state：存放在 bootstrap 创建的桶中（注意：这里不能使用变量）
+  # Remote state in the bucket created by bootstrap (variables are not allowed here)
   backend "s3" {
     bucket       = "edgeboard-tfstate-181851924026"
-    key          = "dev/terraform.tfstate" # 每个环境一个独立的 key
+    key          = "dev/terraform.tfstate" # One key per environment
     region       = "ap-southeast-2"
-    use_lockfile = true # S3 原生锁
+    use_lockfile = true # Native S3 locking
     encrypt      = true
   }
 }

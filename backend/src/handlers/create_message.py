@@ -10,21 +10,21 @@ from aws_lambda_powertools import Logger, Tracer
 from handlers.http import json_response
 
 logger = Logger()
-tracer = Tracer()  # 自动记录 boto3 调用（DynamoDB）为 X-Ray 子段
+tracer = Tracer()  # Records boto3 (DynamoDB) calls as X-Ray subsegments
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 table = boto3.resource("dynamodb").Table(TABLE_NAME)
 
 BOARD_PK = "BOARD#main"
-DEFAULT_AUTHOR = "匿名"
+DEFAULT_AUTHOR = "匿名"  # "Anonymous"; kept in Chinese to match the UI and stored data
 MAX_AUTHOR_LEN = 30
 MAX_MESSAGE_LEN = 500
 
 
 def parse_body(event):
-    """把请求体解析为字典；不是合法的 JSON 对象时返回 None。"""
+    """Parse the request body into a dict; return None if it is not a JSON object."""
     raw = event.get("body") or ""
-    # API Gateway 有时会把请求体做 Base64 编码后再传进来，需要先解码
+    # API Gateway may Base64-encode the body; decode it first
     if event.get("isBase64Encoded"):
         raw = base64.b64decode(raw).decode("utf-8")
     try:
@@ -35,7 +35,7 @@ def parse_body(event):
 
 
 def validate(data):
-    """校验并清洗字段，返回 (清洗后的字段, 错误信息)，两者必有一个为 None。"""
+    """Validate and clean the fields. Returns (fields, error); exactly one is None."""
     author = data.get("author") or ""
     message = data.get("message") or ""
 
@@ -58,7 +58,7 @@ def validate(data):
 @logger.inject_lambda_context
 @tracer.capture_lambda_handler
 def handler(event, context):
-    """POST /api/messages：发布一条留言。"""
+    """POST /api/messages: publish a message."""
     data = parse_body(event)
     if data is None:
         return json_response(400, {"error": "request body must be a JSON object"})
@@ -67,7 +67,7 @@ def handler(event, context):
     if error:
         return json_response(400, {"error": error})
 
-    # ISO 8601 UTC 时间，精确到毫秒，例如 2026-10-27T08:30:00.123Z
+    # ISO 8601 UTC timestamp with milliseconds, e.g. 2026-10-27T08:30:00.123Z
     created_at = (
         datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     )
@@ -75,7 +75,7 @@ def handler(event, context):
 
     table.put_item(Item={"PK": BOARD_PK, "SK": sk, **fields})
 
-    # 只记录 ID，不记录留言内容：日志里不要存放用户数据（隐私）
+    # Log the ID only, never the message text: keep user data out of logs (privacy)
     logger.info("message created", extra={"id": sk})
 
     return json_response(201, {"id": sk, "created_at": created_at, **fields})

@@ -9,7 +9,7 @@ from boto3.dynamodb.conditions import Key
 from handlers.http import json_response
 
 logger = Logger()
-tracer = Tracer()  # 自动记录 boto3 调用（DynamoDB）为 X-Ray 子段
+tracer = Tracer()  # Records boto3 (DynamoDB) calls as X-Ray subsegments
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 table = boto3.resource("dynamodb").Table(TABLE_NAME)
@@ -19,12 +19,12 @@ PAGE_SIZE = 20
 
 
 def encode_cursor(last_key):
-    """把 LastEvaluatedKey（书签）编码成 URL 安全的字符串，交给前端。"""
+    """Encode LastEvaluatedKey as a URL-safe string for the frontend."""
     return base64.urlsafe_b64encode(json.dumps(last_key).encode()).decode()
 
 
 def decode_cursor(cursor):
-    """解码前端传回的游标；格式错误或指向其他分区时返回 None。"""
+    """Decode a cursor from the frontend; None if malformed or for another partition."""
     if not isinstance(cursor, str):
         return None
     try:
@@ -32,7 +32,7 @@ def decode_cursor(cursor):
     except (ValueError, UnicodeDecodeError):
         return None
 
-    # 游标也是用户输入：必须防止被篡改成其他分区的键
+    # The cursor is user input too: reject keys tampered to point at other partitions
     if (
         not isinstance(key, dict)
         or set(key) != {"PK", "SK"}
@@ -44,7 +44,7 @@ def decode_cursor(cursor):
 
 
 def to_message(item):
-    """把数据库里的一条数据转换成 API 返回的格式（隐藏 PK/SK 等内部细节）。"""
+    """Convert a table item into the API shape, hiding internals such as PK/SK."""
     return {
         "id": item["SK"],
         "author": item.get("author", ""),
@@ -56,12 +56,12 @@ def to_message(item):
 @logger.inject_lambda_context
 @tracer.capture_lambda_handler
 def handler(event, context):
-    """GET /api/messages?cursor=...：按时间倒序分页读取留言。"""
+    """GET /api/messages?cursor=...: list messages newest first, paginated."""
     params = event.get("queryStringParameters") or {}
 
     query_kwargs = {
         "KeyConditionExpression": Key("PK").eq(BOARD_PK),
-        "ScanIndexForward": False,  # 倒序：最新的在前
+        "ScanIndexForward": False,  # Descending: newest first
         "Limit": PAGE_SIZE,
     }
 

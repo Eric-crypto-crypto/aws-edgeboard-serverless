@@ -5,7 +5,7 @@ import pytest
 
 
 def put_messages(table, count):
-    """按时间顺序写入 count 条留言：Hello #0 最早，Hello #(count-1) 最新。"""
+    """Write count messages in time order: Hello #0 is oldest, Hello #(count-1) newest."""
     for i in range(count):
         table.put_item(
             Item={

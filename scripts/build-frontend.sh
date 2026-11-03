@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 构建前端：给静态资源的文件名加上内容哈希，输出到 frontend/dist/
+# Build the frontend: add content hashes to asset file names, output to frontend/dist/
 set -euo pipefail
 
 SRC=frontend
@@ -17,7 +17,7 @@ for file in app.js style.css; do
   sed -i "s|\"$file\"|\"$name\"|" "$OUT/index.html"
 done
 
-# 在页面中写入版本号（提交 SHA 的前 7 位），方便确认线上运行的是哪个版本
+# Stamp the version (first 7 chars of the commit SHA) so we can tell what is live
 sed -i "s|__VERSION__|${VERSION:0:7}|" "$OUT/index.html"
 
 echo "Built frontend into $OUT:"

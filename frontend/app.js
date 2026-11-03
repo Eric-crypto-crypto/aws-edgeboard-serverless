@@ -12,19 +12,19 @@ const loadMoreBtn = document.getElementById("load-more");
 const MAX_MESSAGE_LEN = 500;
 let nextCursor = null;
 
-// 统一的 API 调用：同源请求，直接写相对路径 /api/...
+// Shared API helper: requests are same-origin, so relative /api/... paths work
 async function api(path, options = {}) {
   const headers = options.body ? { "Content-Type": "application/json" } : {};
   const resp = await fetch(path, { ...options, headers });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    // 我们的 Lambda 返回 {error}，API Gateway 自身（如 429）返回 {message}
+    // Our Lambdas return {error}; API Gateway itself (e.g. 429) returns {message}
     throw new Error(data.error || data.message || `HTTP ${resp.status}`);
   }
   return data;
 }
 
-// ⚠️ 安全关键：所有用户内容都用 textContent 写入，绝不使用 innerHTML
+// ⚠️ Security-critical: always write user content with textContent, never innerHTML
 function renderMessage(m) {
   const li = document.createElement("li");
 
@@ -79,15 +79,15 @@ function updateCharCount() {
 }
 
 form.addEventListener("submit", async (event) => {
-  event.preventDefault(); // 阻止浏览器默认的"提交表单并刷新页面"
+  event.preventDefault(); // Stop the browser's default submit-and-reload
   formErrorEl.textContent = "";
-  submitBtn.disabled = true; // 防止重复点击，导致发布两次
+  submitBtn.disabled = true; // Prevent double submits
   try {
     const m = await api("/api/messages", {
       method: "POST",
       body: JSON.stringify({ author: authorInput.value, message: messageInput.value }),
     });
-    listEl.prepend(renderMessage(m)); // 新留言插到最前面
+    listEl.prepend(renderMessage(m)); // Newest message goes on top
     messageInput.value = "";
     updateCharCount();
   } catch (err) {

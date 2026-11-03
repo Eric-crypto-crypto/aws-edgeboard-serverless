@@ -1,6 +1,6 @@
 data "aws_caller_identity" "current" {}
 
-# ===== 1. 私有 S3 桶（中央仓库）=====
+# ===== 1. Private S3 bucket =====
 resource "aws_s3_bucket" "site" {
   bucket        = "${var.name}-site-${data.aws_caller_identity.current.account_id}"
   force_destroy = var.force_destroy
@@ -25,15 +25,15 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "site" {
   }
 }
 
-# ===== 2. OAC（专属提货证）=====
+# ===== 2. Origin Access Control =====
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${var.name}-site-oac"
   origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always" # 每次请求都签名
+  signing_behavior                  = "always" # Sign every request
   signing_protocol                  = "sigv4"
 }
 
-# 使用 AWS 托管的缓存策略（按名字查询，不用硬编码 ID）
+# AWS managed policies, looked up by name instead of hard-coded IDs
 data "aws_cloudfront_cache_policy" "caching_optimized" {
   name = "Managed-CachingOptimized"
 }
@@ -50,23 +50,23 @@ data "aws_cloudfront_response_headers_policy" "security_headers" {
   name = "Managed-SecurityHeadersPolicy"
 }
 
-# ===== 3. CloudFront 分发（全球便利店）=====
+# ===== 3. CloudFront distribution =====
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
-  aliases             = [var.domain_name] # 告诉 CloudFront：这个分发也响应这个域名
+  aliases             = [var.domain_name] # Also serve this distribution on the custom domain
   comment             = "${var.name} static site"
   default_root_object = "index.html"
-  price_class         = "PriceClass_All" # 包含澳洲/新西兰节点
+  price_class         = "PriceClass_All" # Includes edge locations in Australia/New Zealand
   http_version        = "http2and3"
   is_ipv6_enabled     = true
 
   origin {
     origin_id                = "s3-site"
-    domain_name              = aws_s3_bucket.site.bucket_regional_domain_name # 区域域名，不是网站托管地址
+    domain_name              = aws_s3_bucket.site.bucket_regional_domain_name # Regional endpoint, not the website endpoint
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
   }
 
-  # 第二个源站：API Gateway
+  # Second origin: API Gateway
   origin {
     origin_id   = "api"
     domain_name = var.api_domain
@@ -74,12 +74,12 @@ resource "aws_cloudfront_distribution" "this" {
     custom_origin_config {
       http_port              = 80
       https_port             = 443
-      origin_protocol_policy = "https-only" # CloudFront 到 API 也必须用 HTTPS
+      origin_protocol_policy = "https-only" # HTTPS from CloudFront to the API as well
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
 
-  # /api/* 行为：不缓存，转发给 API Gateway
+  # /api/* behavior: no caching, forwarded to API Gateway
   ordered_cache_behavior {
     path_pattern           = "/api/*"
     target_origin_id       = "api"
@@ -98,7 +98,7 @@ resource "aws_cloudfront_distribution" "this" {
     viewer_protocol_policy     = "redirect-to-https"
     allowed_methods            = ["GET", "HEAD"]
     cached_methods             = ["GET", "HEAD"]
-    compress                   = true # 自动 gzip / brotli 压缩
+    compress                   = true # Automatic gzip / brotli compression
     cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
     response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
 
@@ -110,7 +110,7 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
-  # 自定义域名的 ACM 证书
+  # ACM certificate for the custom domain
   viewer_certificate {
     acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
     ssl_support_method       = "sni-only"
@@ -119,7 +119,7 @@ resource "aws_cloudfront_distribution" "this" {
 
 }
 
-# ===== 4. 桶策略：只允许"这一个"分发读取 =====
+# ===== 4. Bucket policy: only this distribution may read =====
 data "aws_iam_policy_document" "site_bucket" {
   statement {
     sid       = "AllowCloudFrontOAC"
@@ -131,7 +131,7 @@ data "aws_iam_policy_document" "site_bucket" {
       identifiers = ["cloudfront.amazonaws.com"]
     }
 
-    # 防止混淆代理：只允许我的分发，不允许别人的
+    # Confused-deputy protection: allow our distribution only, not anyone else's
     condition {
       test     = "StringEquals"
       variable = "AWS:SourceArn"
@@ -147,20 +147,20 @@ resource "aws_s3_bucket_policy" "site" {
   depends_on = [aws_s3_bucket_public_access_block.site]
 }
 
-# ===== 5. ACM 证书（必须在 us-east-1）=====
+# ===== 5. ACM certificate (must be in us-east-1) =====
 resource "aws_acm_certificate" "site" {
   provider = aws.us_east_1
 
   domain_name       = var.domain_name
   validation_method = "DNS"
 
-  # 更换证书时，先创建新证书，再删除旧证书，避免网站出现没有证书的空档期
+  # Create the replacement before destroying the old certificate to avoid downtime
   lifecycle {
     create_before_destroy = true
   }
 }
 
-# 在 Route 53 中贴上"暗号纸条"（验证用的 CNAME 记录）
+# DNS validation records (CNAME) in Route 53
 resource "aws_route53_record" "cert_validation" {
   for_each = {
     for dvo in aws_acm_certificate.site.domain_validation_options : dvo.domain_name => {
@@ -178,7 +178,7 @@ resource "aws_route53_record" "cert_validation" {
   allow_overwrite = true
 }
 
-# 等待 ACM 验证通过（这个资源本身不会创建任何东西，只负责"等待"）
+# Waits for ACM validation to finish (creates nothing itself)
 resource "aws_acm_certificate_validation" "site" {
   provider = aws.us_east_1
 
@@ -186,7 +186,7 @@ resource "aws_acm_certificate_validation" "site" {
   validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
 }
 
-# ===== 6. DNS 记录：域名 → CloudFront（IPv4 + IPv6）=====
+# ===== 6. DNS records: domain -> CloudFront (IPv4 + IPv6) =====
 resource "aws_route53_record" "site" {
   for_each = toset(["A", "AAAA"])
 

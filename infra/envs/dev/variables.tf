@@ -1,5 +1,5 @@
 variable "alert_email" {
-  description = "告警通知邮箱。通过环境变量 TF_VAR_alert_email 传入，不要写进代码"
+  description = "Email address for alarm notifications. Pass it via TF_VAR_alert_email; never commit it"
   type        = string
   sensitive   = true
 }

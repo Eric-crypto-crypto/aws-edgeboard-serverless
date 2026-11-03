@@ -1,22 +1,22 @@
-# 数据源（data）：只读取、不创建。这里用来获取当前账号 ID
+# Data source: read-only lookup of the current account ID
 data "aws_caller_identity" "current" {}
 
 locals {
-  # S3 桶名全球唯一，加上账号 ID 后基本不会和别人重名
+  # S3 bucket names are global; the account ID suffix avoids collisions
   bucket_name = "edgeboard-tfstate-${data.aws_caller_identity.current.account_id}"
 }
 
-# 1. 桶本身
+# 1. The bucket itself
 resource "aws_s3_bucket" "tfstate" {
   bucket = local.bucket_name
 
-  # 保险栓：防止误执行 destroy 时把"台账柜"一起删掉
+  # Safety catch: keep an accidental destroy from deleting the state bucket
   lifecycle {
     prevent_destroy = true
   }
 }
 
-# 2. 开启版本控制（台账的时光机）
+# 2. Versioning (lets us roll back a corrupted state file)
 resource "aws_s3_bucket_versioning" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 
@@ -25,7 +25,7 @@ resource "aws_s3_bucket_versioning" "tfstate" {
   }
 }
 
-# 3. 服务端加密
+# 3. Server-side encryption
 resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 
@@ -36,7 +36,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
   }
 }
 
-# 4. 阻止一切公开访问（四个开关全开）
+# 4. Block all public access (all four settings on)
 resource "aws_s3_bucket_public_access_block" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 
@@ -46,7 +46,7 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   restrict_public_buckets = true
 }
 
-# 5. 桶策略：拒绝所有非 HTTPS 的请求
+# 5. Bucket policy: deny any request not made over HTTPS
 resource "aws_s3_bucket_policy" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 
@@ -69,6 +69,6 @@ resource "aws_s3_bucket_policy" "tfstate" {
     ]
   })
 
-  # 先确保"阻止公开访问"配置完成，再写策略，避免两者同时修改桶时冲突
+  # Apply the public access block first so the two don't modify the bucket concurrently
   depends_on = [aws_s3_bucket_public_access_block.tfstate]
 }

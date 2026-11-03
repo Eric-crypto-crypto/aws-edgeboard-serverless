@@ -6,7 +6,7 @@ from boto3.dynamodb.conditions import Key
 
 
 def post(handler, ctx, body):
-    """模拟一次 POST 请求。body 是字典时转为 JSON，是字符串时原样发送。"""
+    """Simulate a POST request. Dict bodies are sent as JSON, strings as-is."""
     raw = body if isinstance(body, str) else json.dumps(body)
     resp = handler.handler({"body": raw}, ctx)
     return resp["statusCode"], json.loads(resp["body"])
@@ -70,7 +70,7 @@ def test_invalid_input_is_rejected(load_handler, lambda_context, table, body):
 
     assert status == 400
     assert "error" in resp_body
-    assert stored_items(table) == []  # 被拒绝的请求不能写入任何数据
+    assert stored_items(table) == []  # Rejected requests must not write anything
 
 
 def test_max_length_message_is_accepted(load_handler, lambda_context):
@@ -87,12 +87,13 @@ def test_html_is_stored_as_plain_text(load_handler, lambda_context, table):
 
     post(create, lambda_context, {"message": payload})
 
-    # 后端原样存储，XSS 防护由前端的 textContent 负责
+    # Stored as-is; XSS protection is the frontend's job (textContent)
     assert stored_items(table)[0]["message"] == payload
 
 
 def test_base64_encoded_body_is_decoded(load_handler, lambda_context):
     create = load_handler("handlers.create_message")
+    # Non-ASCII on purpose: UTF-8 text must survive Base64 decoding
     raw = base64.b64encode(json.dumps({"message": "你好"}).encode()).decode()
 
     resp = create.handler({"body": raw, "isBase64Encoded": True}, lambda_context)
