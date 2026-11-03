@@ -98,7 +98,10 @@ form.addEventListener("submit", async (event) => {
 });
 
 messageInput.addEventListener("input", updateCharCount);
-loadMoreBtn.addEventListener("click", loadMessages);
+// Only fetch the next page; with no cursor, loadMessages() would re-fetch page 1
+loadMoreBtn.addEventListener("click", () => {
+  if (nextCursor) loadMessages();
+});
 
 countVisit();
 loadMessages();
