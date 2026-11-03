@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,21 +8,20 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <footer>VERSION <code>__VERSION__</code></footer>
   <main>
     <header>
       <h1>EdgeBoard</h1>
-      <p class="visits">你是第 <span id="visits">…</span> 位访客</p>
+      <p class="visits">You are visitor #<span id="visits">…</span></p>
     </header>
 
     <section>
-      <h2>留言</h2>
+      <h2>Messages</h2>
       <form id="message-form">
-        <input id="author" type="text" placeholder="昵称（可选）" maxlength="30" autocomplete="nickname">
-        <textarea id="message" placeholder="说点什么……" maxlength="500" rows="3" required></textarea>
+        <input id="author" type="text" placeholder="Name (optional)" maxlength="30" autocomplete="nickname">
+        <textarea id="message" placeholder="Say something…" maxlength="500" rows="3" required></textarea>
         <div class="form-footer">
           <span id="char-count">0 / 500</span>
-          <button id="submit" type="submit">发布</button>
+          <button id="submit" type="submit">Post</button>
         </div>
         <p id="form-error" class="error" role="alert"></p>
       </form>
@@ -31,8 +30,10 @@
     <section>
       <ul id="messages"></ul>
       <p id="list-error" class="error" role="alert"></p>
-      <button id="load-more" type="button" hidden>加载更多</button>
+      <button id="load-more" type="button" hidden>Load more</button>
     </section>
+
+    <footer>Version <code>__VERSION__</code></footer>
   </main>
 </body>
 </html>

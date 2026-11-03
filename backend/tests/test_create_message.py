@@ -47,7 +47,7 @@ def test_author_defaults_to_anonymous(load_handler, lambda_context, data):
 
     _, body = post(create, lambda_context, data)
 
-    assert body["author"] == "匿名"
+    assert body["author"] == "Anonymous"
 
 
 @pytest.mark.parametrize(

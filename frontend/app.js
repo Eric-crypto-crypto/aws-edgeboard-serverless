@@ -36,7 +36,7 @@ function renderMessage(m) {
 
   const time = document.createElement("time");
   time.dateTime = m.created_at;
-  time.textContent = new Date(m.created_at).toLocaleString("zh-CN");
+  time.textContent = new Date(m.created_at).toLocaleString();
 
   meta.append(author, time);
 
@@ -50,7 +50,7 @@ function renderMessage(m) {
 async function countVisit() {
   try {
     const data = await api("/api/visit", { method: "POST" });
-    visitsEl.textContent = data.visits.toLocaleString("zh-CN");
+    visitsEl.textContent = data.visits.toLocaleString();
   } catch {
     visitsEl.textContent = "—";
   }
@@ -67,7 +67,7 @@ async function loadMessages() {
     }
     nextCursor = data.next_cursor;
   } catch (err) {
-    listErrorEl.textContent = `加载失败：${err.message}`;
+    listErrorEl.textContent = `Failed to load: ${err.message}`;
   } finally {
     loadMoreBtn.disabled = false;
     loadMoreBtn.hidden = !nextCursor;
@@ -91,7 +91,7 @@ form.addEventListener("submit", async (event) => {
     messageInput.value = "";
     updateCharCount();
   } catch (err) {
-    formErrorEl.textContent = `发布失败：${err.message}`;
+    formErrorEl.textContent = `Failed to post: ${err.message}`;
   } finally {
     submitBtn.disabled = false;
   }

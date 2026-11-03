@@ -16,7 +16,7 @@ TABLE_NAME = os.environ["TABLE_NAME"]
 table = boto3.resource("dynamodb").Table(TABLE_NAME)
 
 BOARD_PK = "BOARD#main"
-DEFAULT_AUTHOR = "匿名"  # "Anonymous"; kept in Chinese to match the UI and stored data
+DEFAULT_AUTHOR = "Anonymous"
 MAX_AUTHOR_LEN = 30
 MAX_MESSAGE_LEN = 500
 
